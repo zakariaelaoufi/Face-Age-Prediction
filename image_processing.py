@@ -1,5 +1,11 @@
 import numpy as np
-import cv2
+try:
+    import cv2
+except ImportError:
+    import subprocess
+    import sys
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python-headless"])
+    import cv2
 
 
 def preprocess_image(image, clip_limit=2.0):
