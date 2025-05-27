@@ -3,8 +3,8 @@ import cv2
 
 
 def preprocess_image(image, clip_limit=2.0):
-    # # Convert to YCrCb color space for better contrast enhancement
-    ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
+    # Convert to YCrCb color space for better contrast enhancement
+    ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
     y, cr, cb = cv2.split(ycrcb)
     y_channel_stretched = cv2.normalize(y, None, 0, 255, cv2.NORM_MINMAX)
 
@@ -28,3 +28,8 @@ def preprocess_image(image, clip_limit=2.0):
     sharpened = cv2.filter2D(blurred, -1, sharpen_kernel)
 
     return sharpened
+
+
+def resize_image(image, dsize=(200, 200)):
+    resized_image = cv2.resize(image, dsize=dsize, interpolation=cv2.INTER_LANCZOS4)
+    return resized_image

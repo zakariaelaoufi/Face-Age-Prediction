@@ -1,48 +1,56 @@
 import streamlit as st
-import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
-import cv2
-from image_processing import preprocess_image
+import torch
 
-uploaded_file = st.file_uploader(label="Choose an image", type=["jpg", "jpeg", "png"], accept_multiple_files=False)
+from image_processing import preprocess_image, resize_image
+from fapnet import FAPNet, face_age_prediction
 
-if uploaded_file is not None:
-    # Method 1: Using PIL to open the image
-    image = Image.open(uploaded_file)
+# Page config
+st.set_page_config(page_title="Face Age Prediction", page_icon="🧠", layout="centered")
+
+# Title & Description
+st.title("🧠 Face Age Prediction App")
+st.markdown("Upload a face image and let the model estimate the age. Works best with clear, frontal face shots.")
+
+# Model loading (cache to avoid reloading on each run)
+@st.cache_resource
+def load_model(path="./models/human_age_prediction_challenger.pt"):
+    return torch.load(path, map_location='cpu', weights_only=False)
+
+model = load_model()
+
+# Image uploader
+uploaded_file = st.file_uploader("📤 Upload an image", type=["jpg", "jpeg", "png"])
+
+if uploaded_file:
+    image = Image.open(uploaded_file).convert('RGB')
     image_array = np.array(image)
-    enhanced = preprocess_image(image_array)
 
-    # Display with matplotlib
-    fig, axes = plt.subplots(1, 2, figsize=(8, 5))
+    st.subheader("🖼️ Original vs Enhanced Image")
+    col1, col2 = st.columns(2)
 
-    # First subplot
-    axes[0].imshow(image, cmap='gray')
-    axes[0].set_title(f"Uploaded Image")
-    axes[0].axis('off')
+    with col1:
+        st.image(image, caption="Original Image", use_container_width=True)
 
-    # Second subplot
-    axes[1].imshow(enhanced, cmap='gray')
-    axes[1].set_title(f"Enhanced")
-    axes[1].axis('off')
+    with col2:
+        enhanced = preprocess_image(image_array)
+        st.image(enhanced, caption="Enhanced Image", use_container_width=True, channels="BGR")
 
-    plt.tight_layout()
-    st.pyplot(plt)
+    st.divider()
 
-    resized_image = cv2.resize(image_array, (200, 200), interpolation=cv2.INTER_LANCZOS4)
-    enhanced2 = preprocess_image(resized_image)
+    st.subheader("📏 Resized & Enhanced (Model Input)")
+    resized = resize_image(image_array)
+    enhanced_resized = preprocess_image(resized)
 
-    fig2, axes2 = plt.subplots(1, 2, figsize=(8, 5))
+    col3, col4 = st.columns(2)
+    with col3:
+        st.image(resized, caption="Resized (200x200)", use_container_width=True)
+    with col4:
+        st.image(enhanced_resized, caption="Enhanced Input", use_container_width=True, channels="BGR")
 
-    # First subplot
-    axes2[0].imshow(resized_image, cmap='gray')
-    axes2[0].set_title(f"Resized")
-    axes2[0].axis('off')
+    st.divider()
 
-    # Second subplot
-    axes2[1].imshow(enhanced2, cmap='gray')
-    axes2[1].set_title(f"Enhanced")
-    axes2[1].axis('off')
-
-    plt.tight_layout()
-    st.pyplot(plt)
+    st.subheader("🔮 Age Prediction")
+    output = face_age_prediction(model, enhanced_resized)
+    st.success(f"**Estimated Age:** {np.round(output)} years")

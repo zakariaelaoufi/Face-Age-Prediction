@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 class FAPNet(nn.Module):
     def __init__(self, output_dim=1):
@@ -77,3 +78,39 @@ class FAPNet(nn.Module):
         x = self.dropout2(x)
 
         return self.output(x)
+
+
+def face_age_prediction(model, image):
+    # Si enhaced est un numpy array, convertis-le
+    if isinstance(image, np.ndarray):
+        image = torch.from_numpy(image)
+
+    # print("Original shape:", enhaced.shape)
+
+    # Squeeze all dimensions of size 1 to remove extra dimensions
+    image = image.squeeze()
+    # print("After squeeze:", enhaced.shape)
+
+    # Vérifie que le type est float
+    if image.dtype != torch.float32:
+        image = image.float()
+
+    # Normalise si nécessaire (si les valeurs sont dans [0,255])
+    if image.max() > 1.0:
+        image = image / 255.0
+
+    # Si nécessaire, permute les dimensions de (H, W, C) à (C, H, W)
+    if image.ndim == 3 and image.shape[2] == 3:
+        image = image.permute(2, 0, 1)
+        # print("After permute (C, H, W):", enhaced.shape)
+
+    # Ajoute UNE SEULE dimension batch pour obtenir (N, C, H, W)
+    if image.ndim == 3:  # Si on a (C, H, W)
+        image = image.unsqueeze(0)  # Devient (1, C, H, W)
+
+    # print("Final shape before model:", enhaced.shape)  # Doit être [1, 3, H, W]
+
+    # Passe au modèle
+    model.eval()
+    with torch.no_grad():
+        return model(image).squeeze().item()
