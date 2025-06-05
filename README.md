@@ -18,7 +18,7 @@ This application leverages PyTorch and OpenCV for image processing and inference
 
 ### Prerequisites
 
-- Python 3.7+
+- Python 3.10+
 - pip
 
 ### Steps
